@@ -1,188 +1,254 @@
-
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semáforo Switches Layer 3 — CCM 4.0</title>
 <style>
-:root { --gap: 10px; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font-sans); }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a18; min-height: 100vh; padding: 1.5rem; }
+  .container { max-width: 960px; margin: 0 auto; }
 
-.header { padding: 1rem 0 0.75rem; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 1rem; }
-.header h2 { font-size: 16px; font-weight: 500; color: var(--color-text-primary); }
-.header p { font-size: 12px; color: var(--color-text-secondary); margin-top: 3px; }
+  .page-header { background: #fff; border: 0.5px solid #ddddd5; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .page-header h1 { font-size: 17px; font-weight: 500; color: #1a1a18; }
+  .page-header p { font-size: 12px; color: #888780; margin-top: 2px; }
+  .save-badge { font-size: 11px; padding: 4px 10px; border-radius: 6px; background: #eaf3de; color: #3b6d11; border: 0.5px solid #c0dd97; }
 
-.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1rem; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-text-secondary); }
-.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1rem; padding: 0 2px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5f5e5a; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-.station-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
-.tab { padding: 5px 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); font-size: 12px; cursor: pointer; background: var(--color-background-primary); color: var(--color-text-secondary); transition: all 0.15s; }
-.tab:hover { background: var(--color-background-secondary); }
-.tab.active { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); font-weight: 500; }
+  .summary-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1rem; }
+  .sum-card { background: #fff; border: 0.5px solid #ddddd5; border-radius: 10px; padding: 12px; text-align: center; }
+  .sum-card .num { font-size: 22px; font-weight: 500; }
+  .sum-card .lbl { font-size: 11px; color: #888780; margin-top: 2px; }
 
-.activity-list { display: flex; flex-direction: column; gap: 6px; }
-.activity-row { display: grid; grid-template-columns: 28px 1fr 150px 110px; gap: 10px; align-items: center; padding: 10px 12px; border-radius: var(--border-radius-md); background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); }
-.activity-row:hover { border-color: var(--color-border-secondary); }
+  .progress-wrap { background: #fff; border: 0.5px solid #ddddd5; border-radius: 10px; padding: 12px 16px; margin-bottom: 1rem; }
+  .progress-label { font-size: 12px; color: #5f5e5a; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-track { height: 7px; border-radius: 4px; background: #f1efe8; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; background: #1D9E75; transition: width 0.4s; }
 
-.status-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; justify-self: center; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; }
-.status-dot:hover { transform: scale(1.15); }
+  .station-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .tab { padding: 5px 12px; border-radius: 8px; border: 0.5px solid #c8c8c0; font-size: 12px; cursor: pointer; background: #fff; color: #5f5e5a; transition: all 0.15s; white-space: nowrap; }
+  .tab:hover { background: #f5f5f3; }
+  .tab.active { background: #e6f1fb; color: #185fa5; border-color: #85b7eb; font-weight: 500; }
+  .tab .tbadge { margin-left: 5px; font-size: 10px; }
 
-.act-name { font-size: 13px; color: var(--color-text-primary); }
-.act-resp { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .col-header { display: grid; grid-template-columns: 30px 1fr 160px 115px; gap: 10px; padding: 0 14px; margin-bottom: 4px; }
+  .col-header span { font-size: 10px; color: #888780; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
 
-.act-obs { font-size: 11px; color: var(--color-text-secondary); line-height: 1.4; }
+  .activity-list { display: flex; flex-direction: column; gap: 5px; }
+  .activity-row { display: grid; grid-template-columns: 30px 1fr 160px 115px; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 10px; background: #fff; border: 0.5px solid #ddddd5; transition: border-color 0.15s; }
+  .activity-row:hover { border-color: #b4b2a9; }
 
-.status-select { font-size: 12px; padding: 4px 6px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-primary); width: 100%; cursor: pointer; }
+  .status-dot { width: 14px; height: 14px; border-radius: 50%; justify-self: center; cursor: pointer; transition: transform 0.1s; flex-shrink: 0; }
+  .status-dot:hover { transform: scale(1.2); }
 
-.summary-bar { display: flex; gap: 8px; margin-top: 1rem; }
-.sum-card { flex: 1; padding: 10px 12px; border-radius: var(--border-radius-md); background: var(--color-background-secondary); text-align: center; }
-.sum-card .num { font-size: 22px; font-weight: 500; }
-.sum-card .lbl { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .act-name { font-size: 13px; color: #1a1a18; font-weight: 500; }
+  .act-resp { font-size: 11px; color: #888780; margin-top: 2px; line-height: 1.4; }
+  .act-obs { font-size: 11px; color: #5f5e5a; line-height: 1.5; }
 
-.progress-wrap { margin-top: 0.75rem; }
-.progress-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; display: flex; justify-content: space-between; }
-.progress-track { height: 6px; border-radius: 3px; background: var(--color-background-secondary); overflow: hidden; }
-.progress-fill { height: 100%; border-radius: 3px; background: #1D9E75; transition: width 0.4s; }
+  select { font-size: 12px; padding: 5px 7px; border-radius: 7px; border: 0.5px solid #c8c8c0; background: #f5f5f3; color: #1a1a18; width: 100%; cursor: pointer; }
+  select:hover { border-color: #888780; }
+  select:focus { outline: none; border-color: #378add; box-shadow: 0 0 0 2px #b5d4f4; }
 
-.col-header { display: grid; grid-template-columns: 28px 1fr 150px 110px; gap: 10px; padding: 0 12px; margin-bottom: 4px; }
-.col-header span { font-size: 11px; color: var(--color-text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+  .notes-row { grid-column: 2 / -1; margin-top: -4px; }
+  .notes-input { width: 100%; font-size: 11px; padding: 5px 8px; border-radius: 6px; border: 0.5px solid #ddddd5; background: #fafaf8; color: #1a1a18; resize: none; font-family: inherit; line-height: 1.4; }
+  .notes-input:focus { outline: none; border-color: #378add; }
+  .notes-input::placeholder { color: #b4b2a9; }
+
+  .last-update { font-size: 10px; color: #b4b2a9; margin-top: 1rem; text-align: right; }
+
+  @media (max-width: 640px) {
+    body { padding: 0.75rem; }
+    .activity-row, .col-header { grid-template-columns: 24px 1fr 100px; }
+    .act-obs { display: none; }
+    .col-header span:nth-child(3) { display: none; }
+    .summary-bar { grid-template-columns: repeat(2, 1fr); }
+  }
 </style>
+</head>
+<body>
+<div class="container">
 
-<h2 class="sr-only">Tablero semáforo de actividades — despliegue de switches Layer 3, CCM 4.0</h2>
+  <div class="page-header">
+    <div>
+      <h1>Despliegue de switches Layer 3 — CCM 4.0</h1>
+      <p>Estado por actividad · 22 estaciones de bombeo (piloto: Ciudad Jardín + 21 adicionales)</p>
+    </div>
+    <span class="save-badge" id="saveBadge">Guardado localmente</span>
+  </div>
 
-<div class="header">
-  <h2>Despliegue de switches Layer 3 — CCM 4.0</h2>
-  <p>Estado por actividad · 22 estaciones de bombeo (piloto: Ciudad Jardín + 21 adicionales)</p>
+  <div class="legend">
+    <div class="legend-item"><div class="dot" style="background:#1D9E75"></div> Completada</div>
+    <div class="legend-item"><div class="dot" style="background:#EF9F27"></div> En progreso</div>
+    <div class="legend-item"><div class="dot" style="background:#E24B4A"></div> Bloqueada</div>
+    <div class="legend-item"><div class="dot" style="background:#B4B2A9"></div> Pendiente</div>
+  </div>
+
+  <div class="summary-bar" id="summaryBar"></div>
+  <div class="progress-wrap" id="progressWrap"></div>
+
+  <div class="station-tabs" id="stationTabs"></div>
+
+  <div class="col-header">
+    <span></span>
+    <span>Actividad / Responsable</span>
+    <span>Observación</span>
+    <span>Estado</span>
+  </div>
+
+  <div class="activity-list" id="activityList"></div>
+  <p class="last-update" id="lastUpdate"></p>
+
 </div>
-
-<div class="legend">
-  <div class="legend-item"><div class="dot" style="background:#1D9E75"></div> Completada</div>
-  <div class="legend-item"><div class="dot" style="background:#EF9F27"></div> En progreso</div>
-  <div class="legend-item"><div class="dot" style="background:#E24B4A"></div> Bloqueada</div>
-  <div class="legend-item"><div class="dot" style="background:#B4B2A9"></div> Pendiente</div>
-</div>
-
-<div class="station-tabs" id="stationTabs"></div>
-
-<div class="col-header">
-  <span></span>
-  <span>Actividad</span>
-  <span>Observación</span>
-  <span>Estado</span>
-</div>
-
-<div class="activity-list" id="activityList"></div>
-
-<div class="summary-bar" id="summaryBar"></div>
-<div class="progress-wrap" id="progressWrap"></div>
 
 <script>
 const ACTIVITIES = [
   { id: 1, name: "Instalación de patch cord", resp: "Lennart Enrique Madera", obs: "Entre firewall FortiGate y switch Cisco 6500." },
   { id: 2, name: "Configuración en el firewall", resp: "Jorge Mayorquin / Eliu Garcia", obs: "Enlace con OSPF y políticas de acceso SCADA ↔ PLC." },
-  { id: 3, name: "Configuración en la RMS", resp: "GUENACUEDUCTO / Guillermo León / GUENTIC", obs: "Enlace paralelo al existente; habilitar multicast si OLT." },
-  { id: 4, name: "Instalación y configuración del switch", resp: "Juan Esteban Nava – Open Group", obs: "Según dataplan; SNMP v3 con credenciales de GTI." },
+  { id: 3, name: "Configuración en la RMS", resp: "GUENACUEDUCTO / Guillermo León / GUENTIC", obs: "Enlace paralelo al existente; multicast si OLT." },
+  { id: 4, name: "Instalación y configuración del switch", resp: "Juan Esteban Nava – Open Group", obs: "Según dataplan; SNMP v3 con credenciales GTI." },
   { id: 5, name: "Prueba de conectividad", resp: "GUENACUEDUCTO / Open Group / Mayorquin / Garcia", obs: "Conectividad bidireccional SCADA ↔ equipo terminal." },
-  { id: 6, name: "Pruebas del sistema SCADA", resp: "GUENACUEDUCTO / Open Group", obs: "Según protocolo definido por Unidad de Acueducto." },
+  { id: 6, name: "Pruebas del sistema SCADA", resp: "GUENACUEDUCTO / Open Group", obs: "Según protocolo Unidad de Acueducto." },
   { id: 7, name: "Definir puertos de servicio", resp: "GUENACUEDUCTO", obs: "Puertos de tráfico SCADA ↔ dispositivos en sede." },
-  { id: 8, name: "Adaptar configuración en el firewall", resp: "Jorge Mayorquin / Eliu Garcia", obs: "Restringir tráfico por puertos definidos por Acueducto." },
+  { id: 8, name: "Adaptar configuración en el firewall", resp: "Jorge Mayorquin / Eliu Garcia", obs: "Restringir tráfico por puertos definidos." },
   { id: 9, name: "Comprobar funcionamiento de los servicios", resp: "GUENACUEDUCTO", obs: "Prueba final con restricción de puertos aplicada." },
 ];
 
 const STATIONS = [
   "Ciudad Jardín (piloto)",
-  "E.B. 2", "E.B. 3", "E.B. 4", "E.B. 5", "E.B. 6",
-  "E.B. 7", "E.B. 8", "E.B. 9", "E.B. 10", "E.B. 11",
-  "E.B. 12", "E.B. 13", "E.B. 14", "E.B. 15", "E.B. 16",
-  "E.B. 17", "E.B. 18", "E.B. 19", "E.B. 20", "E.B. 21", "E.B. 22"
+  "E.B. 2","E.B. 3","E.B. 4","E.B. 5","E.B. 6",
+  "E.B. 7","E.B. 8","E.B. 9","E.B. 10","E.B. 11",
+  "E.B. 12","E.B. 13","E.B. 14","E.B. 15","E.B. 16",
+  "E.B. 17","E.B. 18","E.B. 19","E.B. 20","E.B. 21","E.B. 22"
 ];
 
 const STATUS_OPTS = [
-  { val: "pending",    label: "Pendiente",   color: "#B4B2A9" },
-  { val: "in-progress", label: "En progreso", color: "#EF9F27" },
-  { val: "blocked",   label: "Bloqueada",   color: "#E24B4A" },
-  { val: "done",      label: "Completada",  color: "#1D9E75" },
+  { val: "pending",     label: "Pendiente",    color: "#B4B2A9" },
+  { val: "in-progress", label: "En progreso",  color: "#EF9F27" },
+  { val: "blocked",     label: "Bloqueada",    color: "#E24B4A" },
+  { val: "done",        label: "Completada",   color: "#1D9E75" },
 ];
 
-let state = {};
-STATIONS.forEach((s, si) => {
-  state[si] = {};
-  ACTIVITIES.forEach(a => {
-    state[si][a.id] = si === 0 ? "done" : "pending";
-  });
-});
+const STORAGE_KEY = "ccm40_switches_state";
 
+function defaultState() {
+  const s = {};
+  STATIONS.forEach((_, si) => {
+    s[si] = {};
+    ACTIVITIES.forEach(a => {
+      s[si][a.id] = { status: si === 0 ? "done" : "pending", note: "" };
+    });
+  });
+  return s;
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return defaultState();
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const now = new Date();
+    document.getElementById("lastUpdate").textContent =
+      "Último guardado: " + now.toLocaleDateString("es-CO") + " " + now.toLocaleTimeString("es-CO", {hour:'2-digit', minute:'2-digit'});
+    const badge = document.getElementById("saveBadge");
+    badge.textContent = "Guardado ✓";
+    badge.style.background = "#e1f5ee";
+    badge.style.color = "#085041";
+    setTimeout(() => {
+      badge.textContent = "Guardado localmente";
+      badge.style.background = "#eaf3de";
+      badge.style.color = "#3b6d11";
+    }, 1500);
+  } catch(e) {}
+}
+
+let state = loadState();
 let currentStation = 0;
 
 function getColor(val) { return STATUS_OPTS.find(o => o.val === val)?.color || "#B4B2A9"; }
-function getLabel(val) { return STATUS_OPTS.find(o => o.val === val)?.label || "Pendiente"; }
 
 function cycleStatus(si, aid) {
-  const order = ["pending", "in-progress", "blocked", "done"];
-  const cur = state[si][aid];
-  const idx = order.indexOf(cur);
-  state[si][aid] = order[(idx + 1) % order.length];
+  const order = ["pending","in-progress","blocked","done"];
+  const cur = state[si][aid].status;
+  state[si][aid].status = order[(order.indexOf(cur) + 1) % order.length];
+  saveState();
   render();
 }
 
+function changeStatus(si, aid, val) {
+  state[si][aid].status = val;
+  saveState();
+  render();
+}
+
+function changeNote(si, aid, val) {
+  state[si][aid].note = val;
+  saveState();
+}
+
 function renderTabs() {
-  const el = document.getElementById("stationTabs");
-  el.innerHTML = STATIONS.map((s, i) => {
+  document.getElementById("stationTabs").innerHTML = STATIONS.map((s, i) => {
     const acts = Object.values(state[i]);
-    const done = acts.filter(v => v === "done").length;
+    const done = acts.filter(v => v.status === "done").length;
     const pct = Math.round(done / acts.length * 100);
-    const hasProblem = acts.some(v => v === "blocked");
-    const inProg = acts.some(v => v === "in-progress");
+    const hasBlock = acts.some(v => v.status === "blocked");
+    const hasProg = acts.some(v => v.status === "in-progress");
     let badge = "";
-    if (hasProblem) badge = `<span style="margin-left:4px;color:#E24B4A;font-size:10px">●</span>`;
-    else if (pct === 100) badge = `<span style="margin-left:4px;color:#1D9E75;font-size:10px">✓</span>`;
-    else if (inProg) badge = `<span style="margin-left:4px;color:#EF9F27;font-size:10px">●</span>`;
-    return `<div class="tab${i === currentStation ? " active" : ""}" onclick="selectStation(${i})">${s}${badge}</div>`;
+    if (hasBlock) badge = `<span class="tbadge" style="color:#E24B4A">●</span>`;
+    else if (pct === 100) badge = `<span class="tbadge" style="color:#1D9E75">✓</span>`;
+    else if (hasProg) badge = `<span class="tbadge" style="color:#EF9F27">●</span>`;
+    return `<div class="tab${i===currentStation?" active":""}" onclick="selectStation(${i})">${s}${badge}</div>`;
   }).join("");
 }
 
 function renderActivities() {
-  const el = document.getElementById("activityList");
-  el.innerHTML = ACTIVITIES.map(a => {
-    const val = state[currentStation][a.id];
-    const color = getColor(val);
+  document.getElementById("activityList").innerHTML = ACTIVITIES.map(a => {
+    const rec = state[currentStation][a.id];
+    const color = getColor(rec.status);
     const opts = STATUS_OPTS.map(o =>
-      `<option value="${o.val}"${val === o.val ? " selected" : ""}>${o.label}</option>`
+      `<option value="${o.val}"${rec.status===o.val?" selected":""}>${o.label}</option>`
     ).join("");
     return `
       <div class="activity-row">
-        <div class="status-dot" style="background:${color};" title="Clic para cambiar" onclick="cycleStatus(${currentStation},${a.id})"></div>
+        <div class="status-dot" style="background:${color}" title="Clic para cambiar estado" onclick="cycleStatus(${currentStation},${a.id})"></div>
         <div>
           <div class="act-name">${a.name}</div>
           <div class="act-resp">${a.resp}</div>
+          <textarea class="notes-input" rows="1" placeholder="Agregar nota…" oninput="changeNote(${currentStation},${a.id},this.value)">${rec.note||""}</textarea>
         </div>
         <div class="act-obs">${a.obs}</div>
-        <select class="status-select" onchange="changeStatus(${currentStation},${a.id},this.value)">${opts}</select>
+        <select onchange="changeStatus(${currentStation},${a.id},this.value)">${opts}</select>
       </div>`;
   }).join("");
 }
 
 function renderSummary() {
-  const totActs = ACTIVITIES.length * STATIONS.length;
-  let done = 0, prog = 0, block = 0, pend = 0;
-  STATIONS.forEach((_, si) => {
-    ACTIVITIES.forEach(a => {
-      const v = state[si][a.id];
-      if (v === "done") done++;
-      else if (v === "in-progress") prog++;
-      else if (v === "blocked") block++;
-      else pend++;
-    });
-  });
-  const pct = Math.round(done / totActs * 100);
-
+  let done=0, prog=0, block=0, pend=0, total=0;
+  STATIONS.forEach((_,si) => ACTIVITIES.forEach(a => {
+    total++;
+    const v = state[si][a.id].status;
+    if(v==="done") done++;
+    else if(v==="in-progress") prog++;
+    else if(v==="blocked") block++;
+    else pend++;
+  }));
+  const pct = Math.round(done/total*100);
   document.getElementById("summaryBar").innerHTML = `
     <div class="sum-card"><div class="num" style="color:#1D9E75">${done}</div><div class="lbl">Completadas</div></div>
     <div class="sum-card"><div class="num" style="color:#EF9F27">${prog}</div><div class="lbl">En progreso</div></div>
     <div class="sum-card"><div class="num" style="color:#E24B4A">${block}</div><div class="lbl">Bloqueadas</div></div>
-    <div class="sum-card"><div class="num" style="color:#888780">${pend}</div><div class="lbl">Pendientes</div></div>
-  `;
+    <div class="sum-card"><div class="num" style="color:#888780">${pend}</div><div class="lbl">Pendientes</div></div>`;
   document.getElementById("progressWrap").innerHTML = `
-    <div class="progress-label"><span>Avance global (${STATIONS.length} estaciones)</span><span>${pct}%</span></div>
-    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-  `;
+    <div class="progress-label"><span>Avance global — ${STATIONS.length} estaciones · ${ACTIVITIES.length} actividades c/u</span><span>${pct}%</span></div>
+    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>`;
 }
 
 function render() {
@@ -191,15 +257,9 @@ function render() {
   renderSummary();
 }
 
-function selectStation(i) {
-  currentStation = i;
-  render();
-}
-
-function changeStatus(si, aid, val) {
-  state[si][aid] = val;
-  render();
-}
+function selectStation(i) { currentStation = i; render(); }
 
 render();
 </script>
+</body>
+</html>
