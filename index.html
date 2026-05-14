@@ -1,0 +1,205 @@
+
+<style>
+:root { --gap: 10px; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+
+.header { padding: 1rem 0 0.75rem; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 1rem; }
+.header h2 { font-size: 16px; font-weight: 500; color: var(--color-text-primary); }
+.header p { font-size: 12px; color: var(--color-text-secondary); margin-top: 3px; }
+
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1rem; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-text-secondary); }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+.station-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+.tab { padding: 5px 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); font-size: 12px; cursor: pointer; background: var(--color-background-primary); color: var(--color-text-secondary); transition: all 0.15s; }
+.tab:hover { background: var(--color-background-secondary); }
+.tab.active { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); font-weight: 500; }
+
+.activity-list { display: flex; flex-direction: column; gap: 6px; }
+.activity-row { display: grid; grid-template-columns: 28px 1fr 150px 110px; gap: 10px; align-items: center; padding: 10px 12px; border-radius: var(--border-radius-md); background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); }
+.activity-row:hover { border-color: var(--color-border-secondary); }
+
+.status-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; justify-self: center; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; }
+.status-dot:hover { transform: scale(1.15); }
+
+.act-name { font-size: 13px; color: var(--color-text-primary); }
+.act-resp { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+
+.act-obs { font-size: 11px; color: var(--color-text-secondary); line-height: 1.4; }
+
+.status-select { font-size: 12px; padding: 4px 6px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-primary); width: 100%; cursor: pointer; }
+
+.summary-bar { display: flex; gap: 8px; margin-top: 1rem; }
+.sum-card { flex: 1; padding: 10px 12px; border-radius: var(--border-radius-md); background: var(--color-background-secondary); text-align: center; }
+.sum-card .num { font-size: 22px; font-weight: 500; }
+.sum-card .lbl { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+
+.progress-wrap { margin-top: 0.75rem; }
+.progress-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; display: flex; justify-content: space-between; }
+.progress-track { height: 6px; border-radius: 3px; background: var(--color-background-secondary); overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; background: #1D9E75; transition: width 0.4s; }
+
+.col-header { display: grid; grid-template-columns: 28px 1fr 150px 110px; gap: 10px; padding: 0 12px; margin-bottom: 4px; }
+.col-header span { font-size: 11px; color: var(--color-text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+</style>
+
+<h2 class="sr-only">Tablero semáforo de actividades — despliegue de switches Layer 3, CCM 4.0</h2>
+
+<div class="header">
+  <h2>Despliegue de switches Layer 3 — CCM 4.0</h2>
+  <p>Estado por actividad · 22 estaciones de bombeo (piloto: Ciudad Jardín + 21 adicionales)</p>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="dot" style="background:#1D9E75"></div> Completada</div>
+  <div class="legend-item"><div class="dot" style="background:#EF9F27"></div> En progreso</div>
+  <div class="legend-item"><div class="dot" style="background:#E24B4A"></div> Bloqueada</div>
+  <div class="legend-item"><div class="dot" style="background:#B4B2A9"></div> Pendiente</div>
+</div>
+
+<div class="station-tabs" id="stationTabs"></div>
+
+<div class="col-header">
+  <span></span>
+  <span>Actividad</span>
+  <span>Observación</span>
+  <span>Estado</span>
+</div>
+
+<div class="activity-list" id="activityList"></div>
+
+<div class="summary-bar" id="summaryBar"></div>
+<div class="progress-wrap" id="progressWrap"></div>
+
+<script>
+const ACTIVITIES = [
+  { id: 1, name: "Instalación de patch cord", resp: "Lennart Enrique Madera", obs: "Entre firewall FortiGate y switch Cisco 6500." },
+  { id: 2, name: "Configuración en el firewall", resp: "Jorge Mayorquin / Eliu Garcia", obs: "Enlace con OSPF y políticas de acceso SCADA ↔ PLC." },
+  { id: 3, name: "Configuración en la RMS", resp: "GUENACUEDUCTO / Guillermo León / GUENTIC", obs: "Enlace paralelo al existente; habilitar multicast si OLT." },
+  { id: 4, name: "Instalación y configuración del switch", resp: "Juan Esteban Nava – Open Group", obs: "Según dataplan; SNMP v3 con credenciales de GTI." },
+  { id: 5, name: "Prueba de conectividad", resp: "GUENACUEDUCTO / Open Group / Mayorquin / Garcia", obs: "Conectividad bidireccional SCADA ↔ equipo terminal." },
+  { id: 6, name: "Pruebas del sistema SCADA", resp: "GUENACUEDUCTO / Open Group", obs: "Según protocolo definido por Unidad de Acueducto." },
+  { id: 7, name: "Definir puertos de servicio", resp: "GUENACUEDUCTO", obs: "Puertos de tráfico SCADA ↔ dispositivos en sede." },
+  { id: 8, name: "Adaptar configuración en el firewall", resp: "Jorge Mayorquin / Eliu Garcia", obs: "Restringir tráfico por puertos definidos por Acueducto." },
+  { id: 9, name: "Comprobar funcionamiento de los servicios", resp: "GUENACUEDUCTO", obs: "Prueba final con restricción de puertos aplicada." },
+];
+
+const STATIONS = [
+  "Ciudad Jardín (piloto)",
+  "E.B. 2", "E.B. 3", "E.B. 4", "E.B. 5", "E.B. 6",
+  "E.B. 7", "E.B. 8", "E.B. 9", "E.B. 10", "E.B. 11",
+  "E.B. 12", "E.B. 13", "E.B. 14", "E.B. 15", "E.B. 16",
+  "E.B. 17", "E.B. 18", "E.B. 19", "E.B. 20", "E.B. 21", "E.B. 22"
+];
+
+const STATUS_OPTS = [
+  { val: "pending",    label: "Pendiente",   color: "#B4B2A9" },
+  { val: "in-progress", label: "En progreso", color: "#EF9F27" },
+  { val: "blocked",   label: "Bloqueada",   color: "#E24B4A" },
+  { val: "done",      label: "Completada",  color: "#1D9E75" },
+];
+
+let state = {};
+STATIONS.forEach((s, si) => {
+  state[si] = {};
+  ACTIVITIES.forEach(a => {
+    state[si][a.id] = si === 0 ? "done" : "pending";
+  });
+});
+
+let currentStation = 0;
+
+function getColor(val) { return STATUS_OPTS.find(o => o.val === val)?.color || "#B4B2A9"; }
+function getLabel(val) { return STATUS_OPTS.find(o => o.val === val)?.label || "Pendiente"; }
+
+function cycleStatus(si, aid) {
+  const order = ["pending", "in-progress", "blocked", "done"];
+  const cur = state[si][aid];
+  const idx = order.indexOf(cur);
+  state[si][aid] = order[(idx + 1) % order.length];
+  render();
+}
+
+function renderTabs() {
+  const el = document.getElementById("stationTabs");
+  el.innerHTML = STATIONS.map((s, i) => {
+    const acts = Object.values(state[i]);
+    const done = acts.filter(v => v === "done").length;
+    const pct = Math.round(done / acts.length * 100);
+    const hasProblem = acts.some(v => v === "blocked");
+    const inProg = acts.some(v => v === "in-progress");
+    let badge = "";
+    if (hasProblem) badge = `<span style="margin-left:4px;color:#E24B4A;font-size:10px">●</span>`;
+    else if (pct === 100) badge = `<span style="margin-left:4px;color:#1D9E75;font-size:10px">✓</span>`;
+    else if (inProg) badge = `<span style="margin-left:4px;color:#EF9F27;font-size:10px">●</span>`;
+    return `<div class="tab${i === currentStation ? " active" : ""}" onclick="selectStation(${i})">${s}${badge}</div>`;
+  }).join("");
+}
+
+function renderActivities() {
+  const el = document.getElementById("activityList");
+  el.innerHTML = ACTIVITIES.map(a => {
+    const val = state[currentStation][a.id];
+    const color = getColor(val);
+    const opts = STATUS_OPTS.map(o =>
+      `<option value="${o.val}"${val === o.val ? " selected" : ""}>${o.label}</option>`
+    ).join("");
+    return `
+      <div class="activity-row">
+        <div class="status-dot" style="background:${color};" title="Clic para cambiar" onclick="cycleStatus(${currentStation},${a.id})"></div>
+        <div>
+          <div class="act-name">${a.name}</div>
+          <div class="act-resp">${a.resp}</div>
+        </div>
+        <div class="act-obs">${a.obs}</div>
+        <select class="status-select" onchange="changeStatus(${currentStation},${a.id},this.value)">${opts}</select>
+      </div>`;
+  }).join("");
+}
+
+function renderSummary() {
+  const totActs = ACTIVITIES.length * STATIONS.length;
+  let done = 0, prog = 0, block = 0, pend = 0;
+  STATIONS.forEach((_, si) => {
+    ACTIVITIES.forEach(a => {
+      const v = state[si][a.id];
+      if (v === "done") done++;
+      else if (v === "in-progress") prog++;
+      else if (v === "blocked") block++;
+      else pend++;
+    });
+  });
+  const pct = Math.round(done / totActs * 100);
+
+  document.getElementById("summaryBar").innerHTML = `
+    <div class="sum-card"><div class="num" style="color:#1D9E75">${done}</div><div class="lbl">Completadas</div></div>
+    <div class="sum-card"><div class="num" style="color:#EF9F27">${prog}</div><div class="lbl">En progreso</div></div>
+    <div class="sum-card"><div class="num" style="color:#E24B4A">${block}</div><div class="lbl">Bloqueadas</div></div>
+    <div class="sum-card"><div class="num" style="color:#888780">${pend}</div><div class="lbl">Pendientes</div></div>
+  `;
+  document.getElementById("progressWrap").innerHTML = `
+    <div class="progress-label"><span>Avance global (${STATIONS.length} estaciones)</span><span>${pct}%</span></div>
+    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+  `;
+}
+
+function render() {
+  renderTabs();
+  renderActivities();
+  renderSummary();
+}
+
+function selectStation(i) {
+  currentStation = i;
+  render();
+}
+
+function changeStatus(si, aid, val) {
+  state[si][aid] = val;
+  render();
+}
+
+render();
+</script>
